@@ -102,27 +102,28 @@ private struct AppRootTab: View {
         } else {
             // Fallback data (same as you shared)
             let fallback: [Seed] = [
-                .init(name: "Classic Connect", pack_size: 20, pack_price: 300, Tier: "Epic"),
+                .init(name: "Benson & Hedges Gold", pack_size: 20, pack_price: 350, Tier: "Legendary"),
+                .init(name: "Berkeley Regular", pack_size: 20, pack_price: 190, Tier: "Epic"),
+                .init(name: "Capstan Regular", pack_size: 20, pack_price: 180, Tier: "Rare"),
+                .init(name: "Classic Connect", pack_size: 20, pack_price: 300, Tier: "Common"),
                 .init(name: "Classic Milds", pack_size: 20, pack_price: 220, Tier: "Common"),
-                .init(name: "Classic Regular", pack_size: 20, pack_price: 230, Tier: "Common"),
-                .init(name: "Stellar Shift Mint", pack_size: 20, pack_price: 200, Tier: "Rare"),
-                .init(name: "Stellar Shift Millennium", pack_size: 20, pack_price: 200, Tier: "Rare"),
+                .init(name: "Classic Regular", pack_size: 20, pack_price: 230, Tier: "Uncommon"),
+                .init(name: "Four Square Regular", pack_size: 20, pack_price: 180, Tier: "Epic"),
                 .init(name: "Gold Flake Kings", pack_size: 20, pack_price: 240, Tier: "Common"),
                 .init(name: "Gold Flake Lights", pack_size: 20, pack_price: 250, Tier: "Uncommon"),
-                .init(name: "Gold Flake Neo", pack_size: 20, pack_price: 260, Tier: "Uncommon"),
-                .init(name: "Wills Navy Cut Regular", pack_size: 20, pack_price: 230, Tier: "Common"),
-                .init(name: "Wills Navy Cut Lights", pack_size: 20, pack_price: 240, Tier: "Uncommon"),
-                .init(name: "Marlboro Red", pack_size: 20, pack_price: 320, Tier: "Epic"),
-                .init(name: "Marlboro Gold", pack_size: 20, pack_price: 330, Tier: "Legendary"),
+                .init(name: "Gold Flake Neo", pack_size: 20, pack_price: 260, Tier: "Epic"),
+                .init(name: "India Kings", pack_size: 20, pack_price: 250, Tier: "Rare"),
                 .init(name: "Marlboro Advance", pack_size: 20, pack_price: 300, Tier: "Epic"),
-                .init(name: "Benson & Hedges Gold", pack_size: 20, pack_price: 350, Tier: "Legendary"),
-                .init(name: "Four Square Regular", pack_size: 20, pack_price: 180, Tier: "Common"),
-                .init(name: "India Kings", pack_size: 20, pack_price: 250, Tier: "Uncommon"),
-                .init(name: "Berkeley Regular", pack_size: 20, pack_price: 190, Tier: "Epic"),
-                .init(name: "Red & White Special", pack_size: 20, pack_price: 200, Tier: "Uncommon"),
-                .init(name: "Capstan Regular", pack_size: 20, pack_price: 180, Tier: "Common"),
-                .init(name: "ROYAL SWAG Herbal", pack_size: 10, pack_price: 180, Tier: "Exotic")
+                .init(name: "Marlboro Gold", pack_size: 20, pack_price: 330, Tier: "Legendary"),
+                .init(name: "Marlboro Red", pack_size: 20, pack_price: 320, Tier: "Legendary"),
+                .init(name: "ROYAL SWAG Herbal", pack_size: 10, pack_price: 180, Tier: "Exotic"),
+                .init(name: "Red & White Special", pack_size: 20, pack_price: 200, Tier: "Mythic"),
+                .init(name: "Stellar Shift Millennium", pack_size: 20, pack_price: 200, Tier: "Common"),
+                .init(name: "Stellar Shift Mint", pack_size: 20, pack_price: 200, Tier: "Uncommon"),
+                .init(name: "Wills Navy Cut Regular", pack_size: 20, pack_price: 230, Tier: "Epic"),
+                .init(name: "Wills Navy Cut Lights", pack_size: 20, pack_price: 240, Tier: "Epic")
             ]
+
             return fallback.map { s in
                 CigType(
                     name: s.name,
