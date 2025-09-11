@@ -58,35 +58,34 @@ struct HomeDashboardView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                // REPLACE WITH:
-                if commonTypes.isEmpty {
-                    EmptyState(onAdd: { showNewType = true })
-                } else {
-                    TabView {
-                        ForEach(Array(pages.enumerated()), id: \.offset) { _, page in
-                            LazyVGrid(columns: cols, spacing: 12) {
-                                ForEach(page, id: \.id) { t in
-                                    let count = todayCountByType[t.id] ?? 0
-                                    CigCard(
-                                        type: t,
-                                        todayCount: count,
-                                        onAdd: { add(type: t) },
-                                        onMinus: { removeOne(type: t) } // if you added minus earlier
-                                    )
-                                }
+            ScrollView {
+                VStack(spacing: 0) { // Restore default spacing between header, cards, and stats
+                    if commonTypes.isEmpty {
+                        EmptyState(onAdd: { showNewType = true })
+                    } else {
+                        TabView {
+                            ForEach(Array(pages.enumerated()), id: \.offset) { _, page in
+                                LazyVGrid(columns: cols, spacing: 8) {
+                                    ForEach(page, id: \.id) { t in
+                                        let count = todayCountByType[t.id] ?? 0
+                                        CigCard(
+                                            type: t,
+                                            todayCount: count,
+                                            onAdd: { add(type: t) },
+                                            onMinus: { removeOne(type: t) }
+                                        )
+                                    }
                             }
                             .padding(.horizontal)
-                            .padding(.vertical, 8)
+                            // Remove .padding(.vertical, 4)
                         }
                     }
                     .tabViewStyle(.page) // swipe horizontally between pages
                     .indexViewStyle(.page(backgroundDisplayMode: .always)) // dots indicator
-                    .frame(height: 230) // tweak 210–260 to your taste
+                    .frame(minHeight: CGFloat((pages.first?.count ?? 1) * 110)) // Reduce minHeight
                 }
 
 
-                // Bottom stats (day + overall)
                 StatsPanel(
                     todayQty: todayQty,
                     todayCost: todayCost,
@@ -94,28 +93,30 @@ struct HomeDashboardView: View {
                     allCost: allCost
                 )
                 .padding(.horizontal)
-                .padding(.bottom)
+                // Remove .padding(.bottom, 16)
             }
-            .navigationTitle("Home")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack {
-                        Button { showHistory = true } label: {
-                            Image(systemName: "clock")   // open history
-                        }
-                        Button { showNewType = true } label: {
-                            Label("Add", systemImage: "plus")   // add cig type
-                        }
+            // Remove .padding(.bottom, 8)
+        }
+        .navigationTitle("Home")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack {
+                    Button { showHistory = true } label: {
+                        Image(systemName: "clock")   // open history
+                    }
+                    Button { showNewType = true } label: {
+                        Label("Add", systemImage: "plus")   // add cig type
                     }
                 }
             }
-            .sheet(isPresented: $showHistory) {
-                NavigationStack { HistoryView() }     // <-- shows daily history (make sure you added HistoryView.swift)
-            }
-            .sheet(isPresented: $showNewType) { NewTypeSheet() }  // ensure this struct exists only once in the project
-
         }
+        .sheet(isPresented: $showHistory) {
+            NavigationStack { HistoryView() }     // <-- shows daily history (make sure you added HistoryView.swift)
+        }
+        .sheet(isPresented: $showNewType) { NewTypeSheet() }  // ensure this struct exists only once in the project
+
     }
+}
 
     // MARK: - Actions
 
@@ -158,9 +159,9 @@ private struct CigCard: View {
     private var borderColor: Color { type.tier.color.opacity(0.35) }
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 0) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(type.name)
                         .font(.headline)
                         .lineLimit(1)
@@ -218,7 +219,7 @@ private struct StatsPanel: View {
     let allQty: Int, allCost: Int
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
             HStack { Text("Today").font(.headline); Spacer() }
             HStack {
                 VStack(alignment: .leading) {
@@ -253,7 +254,7 @@ private struct StatsPanel: View {
 private struct EmptyState: View {
     let onAdd: () -> Void
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             Text("No cigarettes set").font(.headline)
             Text("Tap Add to create your first type with price.")
                 .font(.subheadline)
