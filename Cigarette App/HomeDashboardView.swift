@@ -55,7 +55,8 @@ struct HomeDashboardView: View {
                                 CigCard(
                                     type: t,
                                     todayCount: count,
-                                    onAdd: { add(type: t) }
+                                    onAdd: { add(type: t) },
+                                    onMinus: { removeOne(type: t) }   // <- new
                                 )
                             }
                         }
@@ -105,14 +106,29 @@ struct HomeDashboardView: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         #endif
     }
-}
+    
+    private func removeOne(type: CigType) {
+        // Find the most recent event for this type today (events are reverse-sorted)
+        let cal = Calendar.current
+        if let ev = events.first(where: { $0.type.id == type.id && cal.isDate($0.timestamp, inSameDayAs: Date()) }) {
+            if ev.quantity > 1 {
+                ev.quantity -= 1
+            } else {
+                context.delete(ev)
+            }
+            #if os(iOS)
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
+        }
+    }
 
-// MARK: - Subviews
+}
 
 private struct CigCard: View {
     let type: CigType
     let todayCount: Int
     let onAdd: () -> Void
+    let onMinus: () -> Void    // <- new
 
     var body: some View {
         VStack(spacing: 8) {
@@ -130,17 +146,29 @@ private struct CigCard: View {
             HStack {
                 Text("₹\(type.costPerCigRupees)/cig").foregroundStyle(.secondary)
                 Spacer()
-                Button(action: onAdd) {
-                    Image(systemName: "plus.circle.fill").font(.title2)
+                HStack(spacing: 14) {
+                    Button(action: onMinus) {
+                        Image(systemName: "minus.circle")
+                            .font(.title2)
+                    }
+                    .disabled(todayCount == 0)
+                    .opacity(todayCount == 0 ? 0.35 : 1.0)
+                    .accessibilityLabel("Remove one \(type.name)")
+
+                    Button(action: onAdd) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add one \(type.name)")
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Add one \(type.name)")
             }
         }
         .padding()
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 }
+
 
 private struct StatsPanel: View {
     let todayQty: Int, todayCost: Int
