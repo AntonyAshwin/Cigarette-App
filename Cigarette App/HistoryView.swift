@@ -13,7 +13,7 @@ struct HistoryView: View {
             let day = cal.startOfDay(for: e.timestamp)
             var entry = bucket[day] ?? (0, 0)
             entry.qty  += e.quantity
-            entry.cost += e.quantity * e.type.costPerCigRupees
+            entry.cost += e.quantity * e.unitCostRupeesSnapshot
             bucket[day] = entry
         }
 
@@ -54,24 +54,24 @@ struct DayDetailView: View {
     @Query(sort: \SmokeEvent.timestamp, order: .reverse) private var allEvents: [SmokeEvent]
     let date: Date
 
+    // Example inside DayDetailView
     private var rows: [(typeName: String, qty: Int, cost: Int)] {
         let cal = Calendar.current
         let dayEvents = allEvents.filter { cal.isDate($0.timestamp, inSameDayAs: date) }
 
-        var bucket: [PersistentIdentifier: (name: String, qty: Int, cost: Int)] = [:]
+        var bucket: [String:(qty:Int, cost:Int)] = [:]
         for e in dayEvents {
-            let id = e.type.id
-            var entry = bucket[id] ?? (e.type.name, 0, 0)
+            let name = e.displayTypeName                   // uses snapshot if needed
+            let unit = e.unitCostRupeesSnapshot           // snapshot unit cost
+            var entry = bucket[name] ?? (0, 0)
             entry.qty  += e.quantity
-            entry.cost += e.quantity * e.type.costPerCigRupees
-            bucket[id] = entry
+            entry.cost += e.quantity * unit
+            bucket[name] = entry
         }
-
-        // Map the value tuple (name, qty, cost) -> (typeName, qty, cost) so labels match
-        return bucket.values
-            .map { (typeName: $0.name, qty: $0.qty, cost: $0.cost) }
-            .sorted { $0.typeName < $1.typeName }
+        return bucket.map { (typeName: $0.key, qty: $0.value.qty, cost: $0.value.cost) }
+                     .sorted { $0.typeName < $1.typeName }
     }
+
 
 
     var body: some View {

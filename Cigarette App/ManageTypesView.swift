@@ -6,7 +6,7 @@ struct ManageTypesView: View {
     @Query(sort: \CigType.name) private var types: [CigType]
 
     @State private var showNew = false
-    @State private var editing: CigType?          // <- which item we’re editing
+    @State private var confirmDelete: CigType?   // <- for confirmation alert
 
     var body: some View {
         List {
@@ -15,34 +15,57 @@ struct ManageTypesView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(t.name).font(.headline)
                         Text("Pack \(t.packSize) • ₹\(t.packPriceRupees) • ₹\(t.costPerCigRupees)/cig")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
                     Toggle("Common", isOn: Binding(get: { t.isCommon }, set: { t.isCommon = $0 }))
                         .labelsHidden()
                 }
-                .contentShape(Rectangle())        // tap anywhere on the row
-                .onTapGesture { editing = t }     // tap to edit
+                // Swipe-to-delete with confirm
                 .swipeActions(edge: .trailing) {
-                    Button("Edit") { editing = t }
+                    Button(role: .destructive) {
+                        confirmDelete = t
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
                 }
             }
+            // EditButton (left) shows red minus controls; this uses onDelete
             .onDelete { idx in
                 for i in idx { context.delete(types[i]) }
             }
         }
         .navigationTitle("Manage Cigs")
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) { EditButton() }                  // delete mode
+            ToolbarItem(placement: .navigationBarLeading) { EditButton() }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showNew = true } label: { Label("Add", systemImage: "plus") }      // add new
+                Button { showNew = true } label: { Label("Add", systemImage: "plus") }
             }
         }
-        .sheet(isPresented: $showNew) { NewTypeSheet() }                                    // your existing add sheet
-        .sheet(item: $editing) { type in EditCigTypeSheet(type: type) }                     // edit sheet below
+        .sheet(isPresented: $showNew) { NewTypeSheet() }
+        // Confirm before deleting (shows count of history entries)
+        .alert(
+            "Delete \(confirmDelete?.name ?? "this type")?",
+            isPresented: Binding(
+                get: { confirmDelete != nil },
+                set: { if !$0 { confirmDelete = nil } }
+            )
+        ) {
+            Button("Delete", role: .destructive) {
+                if let t = confirmDelete {
+                    context.delete(t)   // Cascade will remove its SmokeEvents
+                }
+                confirmDelete = nil
+            }
+            Button("Cancel", role: .cancel) { confirmDelete = nil }
+        } message: {
+            if let t = confirmDelete {
+                Text("This will remove all \(t.events.count) logged entries for \(t.name).")
+            }
+        }
     }
 }
+
 
 /* -------- Add sheet (you already had this) -------- */
 

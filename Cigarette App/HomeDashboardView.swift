@@ -14,9 +14,10 @@ struct HomeDashboardView: View {
     // MARK: - Derived data
 
     private var commonTypes: [CigType] {
-        let favs = types.filter { $0.isCommon }
-        return favs.isEmpty ? types : favs
+        let favs = types.filter { $0.isCommon && !$0.isArchived }
+        return favs.isEmpty ? types.filter { !$0.isArchived } : favs
     }
+
 
     private var todayEvents: [SmokeEvent] {
         let cal = Calendar.current
@@ -30,12 +31,26 @@ struct HomeDashboardView: View {
 
     // Precompute "today count by type" to avoid heavy inline filters in ForEach
     private var todayCountByType: [PersistentIdentifier: Int] {
-        var m: [PersistentIdentifier: Int] = [:]
-        for e in todayEvents {
-            m[e.type.id, default: 0] += e.quantity
-        }
-        return m
+    var m: [PersistentIdentifier: Int] = [:]
+    for e in todayEvents {
+        if let id = e.type?.id { m[id, default: 0] += e.quantity }
     }
+    return m
+}
+
+    
+    private var pages: [[CigType]] {
+           guard !commonTypes.isEmpty else { return [] }
+           var result: [[CigType]] = []
+           var i = 0
+           while i < commonTypes.count {
+               let end = min(i + 4, commonTypes.count)
+               result.append(Array(commonTypes[i..<end]))
+               i = end
+           }
+           return result
+       }
+    
 
     private let cols = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -44,27 +59,32 @@ struct HomeDashboardView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 12) {
-                // Top grid
-                ScrollView {
-                    LazyVGrid(columns: cols, spacing: 12) {
-                        if commonTypes.isEmpty {
-                            EmptyState(onAdd: { showNewType = true })
-                        } else {
-                            ForEach(commonTypes, id: \.id) { t in
-                                let count = todayCountByType[t.id] ?? 0
-                                CigCard(
-                                    type: t,
-                                    todayCount: count,
-                                    onAdd: { add(type: t) },
-                                    onMinus: { removeOne(type: t) }   // <- new
-                                )
+                // REPLACE WITH:
+                if commonTypes.isEmpty {
+                    EmptyState(onAdd: { showNewType = true })
+                } else {
+                    TabView {
+                        ForEach(Array(pages.enumerated()), id: \.offset) { _, page in
+                            LazyVGrid(columns: cols, spacing: 12) {
+                                ForEach(page, id: \.id) { t in
+                                    let count = todayCountByType[t.id] ?? 0
+                                    CigCard(
+                                        type: t,
+                                        todayCount: count,
+                                        onAdd: { add(type: t) },
+                                        onMinus: { removeOne(type: t) } // if you added minus earlier
+                                    )
+                                }
                             }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
                         }
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
+                    .tabViewStyle(.page) // swipe horizontally between pages
+                    .indexViewStyle(.page(backgroundDisplayMode: .always)) // dots indicator
+                    .frame(height: 230) // tweak 210–260 to your taste
                 }
+
 
                 // Bottom stats (day + overall)
                 StatsPanel(
@@ -108,19 +128,15 @@ struct HomeDashboardView: View {
     }
     
     private func removeOne(type: CigType) {
-        // Find the most recent event for this type today (events are reverse-sorted)
         let cal = Calendar.current
-        if let ev = events.first(where: { $0.type.id == type.id && cal.isDate($0.timestamp, inSameDayAs: Date()) }) {
-            if ev.quantity > 1 {
-                ev.quantity -= 1
-            } else {
-                context.delete(ev)
-            }
+        if let ev = events.first(where: { $0.type?.id == type.id && cal.isDate($0.timestamp, inSameDayAs: Date()) }) {
+            if ev.quantity > 1 { ev.quantity -= 1 } else { context.delete(ev) }
             #if os(iOS)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             #endif
         }
     }
+
 
 }
 

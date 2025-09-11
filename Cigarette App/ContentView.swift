@@ -20,26 +20,40 @@ struct ContentView: View {
         let cal = Calendar.current
         return events.filter { cal.isDate($0.timestamp, inSameDayAs: Date()) }
     }
-    private var todayQty: Int { todayEvents.map(\.quantity).reduce(0, +) }
-    private var todayCost: Int { todayEvents.map { $0.quantity * $0.type.costPerCigRupees }.reduce(0, +) }
+    private var todayQty: Int {
+        todayEvents.map(\.quantity).reduce(0, +)
+    }
+    private var todayCost: Int {
+        // prefer the snapshot so history stays correct even if type was deleted/price changed
+        todayEvents.map { $0.quantity * $0.unitCostRupeesSnapshot }.reduce(0, +)
+        // If you prefer current price when available, you could do:
+        // todayEvents.map { $0.quantity * ($0.type?.costPerCigRupees ?? $0.unitCostRupeesSnapshot) }.reduce(0, +)
+    }
+
+    // Inside ContentView
 
     struct Row: Identifiable {
-        let id: PersistentIdentifier
-        let type: CigType
+        let typeName: String       // from snapshot if type is gone
+        let unit: Int              // ₹ per cig (snapshot or current)
         let qty: Int
         let cost: Int
+        var id: String { typeName } // stable ID for ForEach
     }
+
     private var rowsByType: [Row] {
-        var m: [PersistentIdentifier: (type: CigType, qty: Int, cost: Int)] = [:]
+        var bucket: [String:(unit: Int, qty: Int, cost: Int)] = [:]
         for e in todayEvents {
-            let id = e.type.id
-            var entry = m[id] ?? (e.type, 0, 0)
-            entry.qty += e.quantity
-            entry.cost += e.quantity * e.type.costPerCigRupees
-            m[id] = entry
+            let name = e.type?.name ?? e.typeNameSnapshot
+            let unit = e.type?.costPerCigRupees ?? e.unitCostRupeesSnapshot
+            var entry = bucket[name] ?? (unit, 0, 0)
+            entry.qty  += e.quantity
+            entry.cost += e.quantity * unit
+            entry.unit  = unit  // in case price changed during the day, keep last seen
+            bucket[name] = entry
         }
-        return m.map { Row(id: $0.key, type: $0.value.type, qty: $0.value.qty, cost: $0.value.cost) }
-                .sorted { $0.type.name < $1.type.name }
+        return bucket
+            .map { Row(typeName: $0.key, unit: $0.value.unit, qty: $0.value.qty, cost: $0.value.cost) }
+            .sorted { $0.typeName < $1.typeName }
     }
 
     var body: some View {
@@ -136,9 +150,10 @@ private struct TodayByTypeList: View {
                     ForEach(rows) { row in
                         HStack {
                             VStack(alignment: .leading) {
-                                Text(row.type.name)
-                                Text("₹\(row.type.costPerCigRupees) per cig")
-                                    .font(.caption).foregroundStyle(.secondary)
+                                Text(row.typeName)
+                                Text("₹\(row.unit) per cig")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
                             Spacer()
                             Text("\(row.qty)").monospacedDigit()
@@ -146,7 +161,7 @@ private struct TodayByTypeList: View {
                             Text("₹\(row.cost)").monospacedDigit()
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("\(row.type.name), \(row.qty) cigarettes, cost ₹\(row.cost)")
+                        .accessibilityLabel("\(row.typeName), \(row.qty) cigarettes, cost ₹\(row.cost)")
                     }
                 }
             }
@@ -154,3 +169,4 @@ private struct TodayByTypeList: View {
         .listStyle(.insetGrouped)
     }
 }
+
