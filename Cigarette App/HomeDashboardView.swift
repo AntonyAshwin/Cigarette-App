@@ -144,12 +144,29 @@ private struct CigCard: View {
     let type: CigType
     let todayCount: Int
     let onAdd: () -> Void
-    let onMinus: () -> Void    // <- new
+    let onMinus: () -> Void
+
+    // Tier visuals
+    private var tierChip: some View {
+        Text(type.tier.title)
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .foregroundStyle(type.tier.color)
+            .background(type.tier.color.opacity(0.15), in: Capsule())
+    }
+    private var borderColor: Color { type.tier.color.opacity(0.35) }
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text(type.name).font(.headline).lineLimit(1)
+        VStack(spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(type.name)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    tierChip // ← badge now sits BELOW the name
+                }
                 Spacer()
                 if todayCount > 0 {
                     Text("\(todayCount)")
@@ -157,10 +174,12 @@ private struct CigCard: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(.blue.opacity(0.15), in: Capsule())
+                        .accessibilityLabel("Today: \(todayCount)")
                 }
             }
             HStack {
-                Text("₹\(type.costPerCigRupees)/cig").foregroundStyle(.secondary)
+                Text("₹\(type.costPerCigRupees)/cig")
+                    .foregroundStyle(.secondary)
                 Spacer()
                 HStack(spacing: 14) {
                     Button(action: onMinus) {
@@ -182,8 +201,16 @@ private struct CigCard: View {
         }
         .padding()
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(borderColor, lineWidth: 1)
+        )
+        .shadow(color: type.tier == .mythic ? type.tier.color.opacity(0.2) : .clear,
+                radius: type.tier == .mythic ? 6 : 0, x: 0, y: 0)
     }
 }
+
+
 
 
 private struct StatsPanel: View {
