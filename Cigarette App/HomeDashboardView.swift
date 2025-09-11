@@ -5,8 +5,11 @@ struct HomeDashboardView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \CigType.name) private var types: [CigType]
     @Query(sort: \SmokeEvent.timestamp, order: .reverse) private var events: [SmokeEvent]
+    
+    // at the top of the view with your other @State vars
+    @State private var showHistory = false
+    @State private var showNewType = false   // (you already have this)
 
-    @State private var showNewType = false
 
     // MARK: - Derived data
 
@@ -74,11 +77,22 @@ struct HomeDashboardView: View {
             }
             .navigationTitle("Home")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showNewType = true } label: { Label("Add", systemImage: "plus") }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack {
+                        Button { showHistory = true } label: {
+                            Image(systemName: "clock")   // open history
+                        }
+                        Button { showNewType = true } label: {
+                            Label("Add", systemImage: "plus")   // add cig type
+                        }
+                    }
                 }
             }
-            .sheet(isPresented: $showNewType) { NewTypeSheet() } // make sure you only define this struct once in your project
+            .sheet(isPresented: $showHistory) {
+                NavigationStack { HistoryView() }     // <-- shows daily history (make sure you added HistoryView.swift)
+            }
+            .sheet(isPresented: $showNewType) { NewTypeSheet() }  // ensure this struct exists only once in the project
+
         }
     }
 
