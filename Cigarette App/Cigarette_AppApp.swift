@@ -118,8 +118,8 @@ private struct AppRootTab: View {
                 .init(name: "Marlboro Red", pack_size: 20, pack_price: 320, Tier: "Legendary"),
                 .init(name: "ROYAL SWAG Herbal", pack_size: 10, pack_price: 180, Tier: "Exotic"),
                 .init(name: "Red & White Special", pack_size: 20, pack_price: 200, Tier: "Mythic"),
-                .init(name: "Stellar Shift Millennium", pack_size: 20, pack_price: 200, Tier: "Common"),
-                .init(name: "Stellar Shift Mint", pack_size: 20, pack_price: 200, Tier: "Uncommon"),
+                .init(name: "Shift Millennium", pack_size: 20, pack_price: 200, Tier: "Common"),
+                .init(name: "Shift Mint", pack_size: 20, pack_price: 200, Tier: "Uncommon"),
                 .init(name: "Wills Navy Cut Regular", pack_size: 20, pack_price: 230, Tier: "Epic"),
                 .init(name: "Wills Navy Cut Lights", pack_size: 20, pack_price: 240, Tier: "Epic")
             ]

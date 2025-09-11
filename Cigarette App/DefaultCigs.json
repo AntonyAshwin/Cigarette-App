@@ -15,8 +15,8 @@
   { "name": "Marlboro Red", "pack_size": 20, "pack_price": 320, "Tier": "Legendary" },
   { "name": "ROYAL SWAG Herbal", "pack_size": 10, "pack_price": 180, "Tier": "Exotic" },
   { "name": "Red & White Special", "pack_size": 20, "pack_price": 200, "Tier": "Mythic" },
-  { "name": "Stellar Shift Millennium", "pack_size": 20, "pack_price": 200, "Tier": "Common" },
-  { "name": "Stellar Shift Mint", "pack_size": 20, "pack_price": 200, "Tier": "Uncommon" },
+  { "name": "Shift Millennium", "pack_size": 20, "pack_price": 200, "Tier": "Common" },
+  { "name": "Shift Mint", "pack_size": 20, "pack_price": 200, "Tier": "Uncommon" },
   { "name": "Wills Navy Cut Regular", "pack_size": 20, "pack_price": 230, "Tier": "Epic" },
   { "name": "Wills Navy Cut Lights", "pack_size": 20, "pack_price": 240, "Tier": "Epic" }
 ]
