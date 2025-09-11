@@ -1,23 +1,63 @@
 import SwiftUI
 import SwiftData
 
+extension CigTier {
+    var title: String {
+        switch self {
+        case .common:    return "Common"
+        case .uncommon:  return "Uncommon"
+        case .rare:      return "Rare"
+        case .epic:      return "Epic"
+        case .legendary: return "Legendary"
+        case .mythic:    return "Mythic"
+        case .exotic:    return "Exotic"
+        }
+    }
+    var color: Color {
+        switch self {
+        case .common:    return Color(red: 180/255, green: 180/255, blue: 180/255) // #B4B4B4
+        case .uncommon:  return Color(red:  76/255, green: 175/255, blue:  80/255) // #4CAF50
+        case .rare:      return Color(red:  33/255, green: 150/255, blue: 243/255) // #2196F3
+        case .epic:      return Color(red: 156/255, green:  39/255, blue: 176/255) // #9C27B0
+        case .legendary: return Color(red: 255/255, green: 193/255, blue:   7/255) // #FFC107
+        case .mythic:    return Color(red: 255/255, green: 215/255, blue:   0/255) // #FFD700
+        case .exotic:    return Color(red:   0/255, green: 255/255, blue: 255/255) // #00FFFF
+        }
+    }
+}
+
+struct TierChip: View {
+    let tier: CigTier
+    var body: some View {
+        Text(tier.title)
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .foregroundStyle(tier.color)
+            .background(tier.color.opacity(0.15), in: Capsule())
+    }
+}
+
+
 struct ManageTypesView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \CigType.name) private var types: [CigType]
 
     @State private var showNew = false
     @State private var confirmDelete: CigType?
-    @State private var editing: CigType?   // which item is being edited
+    @State private var editing: CigType?
+    // which item is being edited
 
     var body: some View {
         List {
             ForEach(types) { t in
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(t.name).font(.headline)
+                        HStack(spacing: 6) {
+                            Text(t.name).font(.headline)
+                            TierChip(tier: t.tier)   // <- NEW
+                        }
                         Text("Pack \(t.packSize) • ₹\(t.packPriceRupees) • ₹\(t.costPerCigRupees)/cig")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
                     Toggle("Common", isOn: Binding(get: { t.isCommon }, set: { t.isCommon = $0 }))
@@ -83,6 +123,7 @@ struct NewTypeSheet: View {
     @State private var packSize = "20"
     @State private var packPrice = ""   // rupees only
     @State private var isCommon = true
+    @State private var tier: CigTier = .common   // ← NEW
 
     var body: some View {
         NavigationStack {
@@ -94,6 +135,17 @@ struct NewTypeSheet: View {
                 Section("Pack") {
                     TextField("Pack size", text: $packSize).keyboardType(.numberPad)
                     TextField("Pack price (₹, no decimals)", text: $packPrice).keyboardType(.numberPad)
+                }
+                Section("Tier") {   // ← NEW
+                    Picker("Tier", selection: $tier) {
+                        ForEach(CigTier.allCases, id: \.self) { t in
+                            HStack {
+                                Circle().fill(t.color).frame(width: 10, height: 10)
+                                Text(t.title)
+                            }.tag(t)
+                        }
+                    }
+                    .pickerStyle(.menu)
                 }
             }
             .navigationTitle("New Cigarette")
@@ -108,7 +160,9 @@ struct NewTypeSheet: View {
                             packSize: max(1, size),
                             packPriceRupees: max(0, price),
                             notes: nil,
-                            isCommon: isCommon
+                            isCommon: isCommon,
+                            isArchived: false,
+                            tier: tier                    // ← NEW
                         )
                         context.insert(t)
                         dismiss()
@@ -120,12 +174,11 @@ struct NewTypeSheet: View {
     }
 }
 
+
 /* -------- Edit sheet (you already had this) -------- */
 
 struct EditCigTypeSheet: View {
     @Environment(\.dismiss) private var dismiss
-
-    // Bind directly to your @Model object so edits persist automatically
     @Bindable var type: CigType
 
     @State private var packSizeText: String
@@ -147,6 +200,17 @@ struct EditCigTypeSheet: View {
                 Section("Pack") {
                     TextField("Pack size", text: $packSizeText).keyboardType(.numberPad)
                     TextField("Pack price (₹, no decimals)", text: $packPriceText).keyboardType(.numberPad)
+                }
+                Section("Tier") {   // ← NEW
+                    Picker("Tier", selection: $type.tier) {
+                        ForEach(CigTier.allCases, id: \.self) { t in
+                            HStack {
+                                Circle().fill(t.color).frame(width: 10, height: 10)
+                                Text(t.title)
+                            }.tag(t)
+                        }
+                    }
+                    .pickerStyle(.menu)
                 }
             }
             .navigationTitle("Edit Cigarette")
