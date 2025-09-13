@@ -84,7 +84,9 @@ struct HomeDashboardView: View {
                     .indexViewStyle(.page(backgroundDisplayMode: .always)) // dots indicator
                     .frame(minHeight: CGFloat((pages.first?.count ?? 1) * 110)) // Reduce minHeight
                 }
-
+                    LungsVectorView()
+                        .padding(.horizontal)
+                        .padding(.top, 6)
 
                 StatsPanel(
                     todayQty: todayQty,
@@ -268,3 +270,26 @@ private struct EmptyState: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+private struct LungsVectorView: View {
+    @State private var breathe = false
+
+    var body: some View {
+        LungShape()
+            .fill(
+                LinearGradient(colors: [
+                    Color(red: 0.98, green: 0.50, blue: 0.55),
+                    Color(red: 1.00, green: 0.72, blue: 0.76)
+                ], startPoint: .top, endPoint: .bottom)
+            )
+            .overlay(
+                LungShape().stroke(Color.black.opacity(0.12), lineWidth: 2)
+            )
+            .frame(height: 160)
+            .scaleEffect(breathe ? 1.02 : 0.98) // subtle “breathing”
+            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: breathe)
+            .onAppear { breathe = true }
+            .accessibilityHidden(true)
+    }
+}
+
