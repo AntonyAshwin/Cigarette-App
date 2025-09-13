@@ -369,9 +369,12 @@ private struct LungsAndScoreRow: View {
                 Text("Lung score")
                     .font(.headline)
 
-                Text("\(score) / \(maxScore)")
-                    .font(.system(size: 34, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
+                Text("\(score)\u{00A0}/\u{00A0}\(maxScore)")
+    .font(.system(size: 34, weight: .semibold, design: .rounded))
+    .monospacedDigit()
+    .lineLimit(1)
+    .minimumScaleFactor(0.85)
+
 
                 // Optional progress bar
                 ProgressView(value: Double(score), total: Double(maxScore))
