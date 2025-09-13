@@ -82,6 +82,7 @@ struct HomeDashboardView: View {
                     }
 
                     LungShape()
+                        .breathing()     
                         .padding(.horizontal)
                         .padding(.top, 6)
 

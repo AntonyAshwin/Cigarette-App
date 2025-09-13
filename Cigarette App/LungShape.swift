@@ -1,21 +1,22 @@
 import SwiftUI
 
-/// Shows lungs.png from your app bundle / Assets.
-/// Keep the asset/file name exactly "lungs" (lungs.png).
-struct LungShape: View {
-    var height: CGFloat = 160
+/// Renders "lungs.png" from Assets (or bundle) and supports the breathing animation.
+public struct LungShape: View {
+    public var height: CGFloat = 160
 
-    var body: some View {
+    public init(height: CGFloat = 160) {
+        self.height = height
+    }
+
+    public var body: some View {
         Group {
             #if canImport(UIKit)
-            // Try loading from bundle (works for plain PNG files too)
             if let ui = UIImage(named: "lungs") {
                 Image(uiImage: ui)
                     .resizable()
                     .scaledToFit()
             } else {
-                // Fallback to asset catalog name
-                Image("lungs")
+                Image("lungs") // fallback to asset name
                     .resizable()
                     .scaledToFit()
             }
