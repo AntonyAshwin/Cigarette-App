@@ -60,31 +60,28 @@ struct HomeDashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) { // Restore default spacing between header, cards, and stats
+                    // REPLACE your TabView block with this:
                     if commonTypes.isEmpty {
                         EmptyState(onAdd: { showNewType = true })
                     } else {
                         TabView {
                             ForEach(Array(pages.enumerated()), id: \.offset) { _, page in
-                                LazyVGrid(columns: cols, spacing: 8) {
-                                    ForEach(page, id: \.id) { t in
-                                        let count = todayCountByType[t.id] ?? 0
-                                        CigCard(
-                                            type: t,
-                                            todayCount: count,
-                                            onAdd: { add(type: t) },
-                                            onMinus: { removeOne(type: t) }
-                                        )
-                                    }
+                                CardGridPage(
+                                    page: page,
+                                    counts: todayCountByType,
+                                    onAdd: { add(type: $0) },
+                                    onMinus: { removeOne(type: $0) }
+                                )
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
                             }
-                            .padding(.horizontal)
-                            // Remove .padding(.vertical, 4)
                         }
+                        .tabViewStyle(.page)
+                        .indexViewStyle(.page(backgroundDisplayMode: .always))
+                        .frame(minHeight: CGFloat((pages.first?.count ?? 1) * 110))
                     }
-                    .tabViewStyle(.page) // swipe horizontally between pages
-                    .indexViewStyle(.page(backgroundDisplayMode: .always)) // dots indicator
-                    .frame(minHeight: CGFloat((pages.first?.count ?? 1) * 110)) // Reduce minHeight
-                }
-                    LungsVectorView()
+
+                    LungShape()
                         .padding(.horizontal)
                         .padding(.top, 6)
 
@@ -271,25 +268,28 @@ private struct EmptyState: View {
     }
 }
 
-private struct LungsVectorView: View {
-    @State private var breathe = false
+private struct CardGridPage: View {
+    let page: [CigType]
+    let counts: [PersistentIdentifier: Int]
+    let onAdd: (CigType) -> Void
+    let onMinus: (CigType) -> Void
+
+    private let cols = [GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
-        LungShape()
-            .fill(
-                LinearGradient(colors: [
-                    Color(red: 0.98, green: 0.50, blue: 0.55),
-                    Color(red: 1.00, green: 0.72, blue: 0.76)
-                ], startPoint: .top, endPoint: .bottom)
-            )
-            .overlay(
-                LungShape().stroke(Color.black.opacity(0.12), lineWidth: 2)
-            )
-            .frame(height: 160)
-            .scaleEffect(breathe ? 1.02 : 0.98) // subtle “breathing”
-            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: breathe)
-            .onAppear { breathe = true }
-            .accessibilityHidden(true)
+        LazyVGrid(columns: cols, spacing: 8) {
+            ForEach(page, id: \.id) { t in
+                let count = counts[t.id] ?? 0
+                CigCard(
+                    type: t,
+                    todayCount: count,
+                    onAdd: { onAdd(t) },
+                    onMinus: { onMinus(t) }
+                )
+            }
+        }
     }
 }
+
+
 
