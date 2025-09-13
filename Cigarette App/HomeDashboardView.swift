@@ -29,6 +29,11 @@ struct HomeDashboardView: View {
         return events.filter { cal.isDate($0.timestamp, inSameDayAs: Date()) }
     }
 
+    private var lungTint: Color {
+    LungColorEngine.color(for: events, palette: LungColorEngine.palette14)
+}
+
+
     private var todayQty: Int { todayEvents.map(\.quantity).reduce(0, +) }
     private var todayCost: Int { todayEvents.map(\.costRupees).reduce(0, +) }
     private var allQty: Int { events.map(\.quantity).reduce(0, +) }
@@ -64,7 +69,7 @@ struct HomeDashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 0) { // Restore default spacing between header, cards, and stats
+                VStack() { // Restore default spacing between header, cards, and stats
                     // REPLACE your TabView block with this:
                     if commonTypes.isEmpty {
                         EmptyState(onAdd: { showNewType = true })
@@ -88,10 +93,11 @@ struct HomeDashboardView: View {
                         .frame(minHeight: CGFloat((pages.first?.count ?? 1) * 110))
                     }
 
-                    LungShape(tint: lungLevel.color, breathing : true)
+                    LungShape(tint: lungTint, breathing: true)
     .frame(height: 160)
     .padding(.horizontal)
     .padding(.top, 6)
+
 
                 StatsPanel(
                     todayQty: todayQty,
@@ -196,9 +202,9 @@ private struct CigCard: View {
     private var borderColor: Color { type.tier.color.opacity(0.35) }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack() {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading) {
                     Text(type.name)
                         .font(.headline)
                         .lineLimit(1)
@@ -219,7 +225,7 @@ private struct CigCard: View {
                 Text("₹\(type.costPerCigRupees)/cig")
                     .foregroundStyle(.secondary)
                 Spacer()
-                HStack(spacing: 14) {
+                HStack() {
                     Button(action: onMinus) {
                         Image(systemName: "minus.circle")
                             .font(.title2)
@@ -256,7 +262,7 @@ private struct StatsPanel: View {
     let allQty: Int, allCost: Int
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack() {
             HStack { Text("Today").font(.headline); Spacer() }
             HStack {
                 VStack(alignment: .leading) {
@@ -291,7 +297,7 @@ private struct StatsPanel: View {
 private struct EmptyState: View {
     let onAdd: () -> Void
     var body: some View {
-        VStack(spacing: 0) {
+        VStack() {
             Text("No cigarettes set").font(.headline)
             Text("Tap Add to create your first type with price.")
                 .font(.subheadline)
@@ -316,7 +322,7 @@ private struct CardGridPage: View {
     private let cols = [GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
-        LazyVGrid(columns: cols, spacing: 8) {
+        LazyVGrid(columns: cols) {
             ForEach(page, id: \.id) { t in
                 let count = counts[t.id] ?? 0
                 CigCard(
