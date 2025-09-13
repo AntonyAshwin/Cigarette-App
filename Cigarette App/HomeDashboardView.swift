@@ -18,6 +18,10 @@ struct HomeDashboardView: View {
         return favs.isEmpty ? types.filter { !$0.isArchived } : favs
     }
 
+    private var lungLevel: LungTintLevel {
+    LungColorEngine.level(for: events)
+}
+
 
     private var todayEvents: [SmokeEvent] {
         let cal = Calendar.current
@@ -81,10 +85,10 @@ struct HomeDashboardView: View {
                         .frame(minHeight: CGFloat((pages.first?.count ?? 1) * 110))
                     }
 
-                    LungShape()
-                        .breathing()     
-                        .padding(.horizontal)
-                        .padding(.top, 6)
+                    LungShape(tint: lungLevel.color, breathing : true)
+    .frame(height: 160)
+    .padding(.horizontal)
+    .padding(.top, 6)
 
                 StatsPanel(
                     todayQty: todayQty,
