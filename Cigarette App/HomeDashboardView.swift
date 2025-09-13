@@ -22,6 +22,17 @@ struct HomeDashboardView: View {
     private var lungLevel: LungTintLevel {
     LungColorEngine.level(for: events)
 }
+    
+    // Text label beside the score (uses your 7-level enum: Healthy, Strained, etc.)
+    private var lungLabel: String {
+        LungColorEngine.level(for: events).label
+    }
+
+    
+    private var lungScore100: Int {
+        101 - LungColorEngine.score100(for: events)   // 100 = best, 1 = worst
+    }
+
 
 
     private var todayEvents: [SmokeEvent] {
@@ -93,10 +104,14 @@ struct HomeDashboardView: View {
                         .frame(minHeight: CGFloat((pages.first?.count ?? 1) * 110))
                     }
 
-                    LungShape(tint: lungTint, breathing: true)
-    .frame(height: 160)
-    .padding(.horizontal)
-    .padding(.top, 6)
+                    LungsAndScoreRow(
+                        tint: lungTint,               // or lungLevel.color
+                        score: lungScore100,
+                        maxScore: 100,
+                        label: lungLabel
+                    )
+                    .padding(.horizontal)
+                    .padding(.top, 6)
 
 
                 StatsPanel(
@@ -337,6 +352,47 @@ private struct CardGridPage: View {
         }
     }
 }
+
+
+private struct LungsAndScoreRow: View {
+    let tint: Color
+    let score: Int
+    let maxScore: Int
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 16) {
+            LungShape(tint: tint, breathing: true)
+                .frame(width: 140, height: 140)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Lung score")
+                    .font(.headline)
+
+                Text("\(score) / \(maxScore)")
+                    .font(.system(size: 34, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+
+                // Optional progress bar
+                ProgressView(value: Double(score), total: Double(maxScore))
+                    .tint(tint)
+
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(tint.opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
+
 
 private struct QuickQtySheet: View {
     let typeName: String

@@ -138,4 +138,18 @@ struct LungColorEngine {
         let idx = Int(round(n * Double(max(0, buckets - 1))))
         return min(max(0, idx), max(0, buckets - 1))
     }
+    
+    // 1…100 score mapped from severity (0…1)
+    static func score100(
+        for events: [SmokeEvent],
+        today: Date = Date(),
+        halfLifeDays: Double = 10,
+        p: Double = 1.15,
+        K: Double = 50
+    ) -> Int {
+        let n = severity(from: events, today: today, halfLifeDays: halfLifeDays, p: p, K: K)
+        // 0 → 1, 1 → 100
+        return max(1, min(100, 1 + Int(round(n * 99.0))))
+    }
+
 }
