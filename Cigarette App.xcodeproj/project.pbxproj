@@ -29,22 +29,9 @@
 		C51345DA2E72CFB1003B437D /* Cigarette AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Cigarette AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		C5C41EAF2E7579C100977B80 /* Exceptions for "Cigarette App" folder in "Cigarette App" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Untitled.swift,
-			);
-			target = C51345C02E72CFAE003B437D /* Cigarette App */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C51345C32E72CFAE003B437D /* Cigarette App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				C5C41EAF2E7579C100977B80 /* Exceptions for "Cigarette App" folder in "Cigarette App" target */,
-			);
 			path = "Cigarette App";
 			sourceTree = "<group>";
 		};

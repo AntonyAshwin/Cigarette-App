@@ -9,6 +9,7 @@ struct HomeDashboardView: View {
     // at the top of the view with your other @State vars
     @State private var showHistory = false
     @State private var showNewType = false   // (you already have this)
+    @State private var editingType: CigType?
 
 
     // MARK: - Derived data
@@ -74,8 +75,10 @@ struct HomeDashboardView: View {
                                     page: page,
                                     counts: todayCountByType,
                                     onAdd: { add(type: $0) },
-                                    onMinus: { removeOne(type: $0) }
+                                    onMinus: { removeOne(type: $0) },
+                                    onTap: { editingType = $0 }      // 👈 open editor on tap
                                 )
+
                                 .padding(.horizontal)
                                 .padding(.vertical, 8)
                             }
@@ -118,6 +121,15 @@ struct HomeDashboardView: View {
             NavigationStack { HistoryView() }     // <-- shows daily history (make sure you added HistoryView.swift)
         }
         .sheet(isPresented: $showNewType) { NewTypeSheet() }  // ensure this struct exists only once in the project
+        .sheet(item: $editingType) { type in
+    QuickQtySheet(
+        typeName: type.name,
+        initialQty: qtyToday(for: type),
+        onSave: { newQty in
+            applyQty(for: type, newQty: newQty)
+        }
+    )
+}
 
     }
 }
@@ -141,6 +153,27 @@ struct HomeDashboardView: View {
             #endif
         }
     }
+    
+    private func qtyToday(for type: CigType) -> Int {
+        todayCountByType[type.id] ?? 0
+    }
+
+    private func applyQty(for type: CigType, newQty: Int) {
+        let cal = Calendar.current
+        if let ev = events.first(where: { $0.type?.id == type.id && cal.isDate($0.timestamp, inSameDayAs: Date()) }) {
+            if newQty <= 0 {
+                context.delete(ev)                    // remove today’s event if 0
+            } else {
+                ev.quantity = newQty                 // edit today’s event
+            }
+        } else if newQty > 0 {
+            context.insert(SmokeEvent(quantity: newQty, type: type))  // create today’s event
+        }
+        #if os(iOS)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
+    }
+
 
 
 }
@@ -278,6 +311,7 @@ private struct CardGridPage: View {
     let counts: [PersistentIdentifier: Int]
     let onAdd: (CigType) -> Void
     let onMinus: (CigType) -> Void
+    let onTap: (CigType) -> Void        
 
     private let cols = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -291,10 +325,85 @@ private struct CardGridPage: View {
                     onAdd: { onAdd(t) },
                     onMinus: { onMinus(t) }
                 )
+                .contentShape(Rectangle())   
+                .onTapGesture { onTap(t) }   
             }
         }
     }
 }
+
+private struct QuickQtySheet: View {
+    let typeName: String
+    let initialQty: Int
+    let onSave: (Int) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var qtyText: String
+    @State private var qty: Int
+
+    init(typeName: String, initialQty: Int, onSave: @escaping (Int) -> Void) {
+        self.typeName = typeName
+        self.initialQty = initialQty
+        self.onSave = onSave
+        _qty = State(initialValue: max(0, initialQty))
+        _qtyText = State(initialValue: String(max(0, initialQty)))
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(header: Text(typeName)) {
+                    Stepper(value: $qty, in: 0...60) {
+                        HStack {
+                            Text("Today’s count")
+                            Spacer()
+                            Text("\(qty)").monospacedDigit()
+                        }
+                    }
+                    HStack {
+                        Text("Enter Quantity ")
+                        Spacer()
+                        TextField("", text: $qtyText)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
+                            .onChange(of: qtyText) { _, newVal in
+                                let v = Int(newVal) ?? qty
+                                qty = max(0, min(60, v))
+                            }
+                            .onChange(of: qty) { _, v in
+                                qtyText = String(v)
+                            }
+                    }
+                    if initialQty > 0 {
+                        Button(role: .destructive) {
+                            qty = 0
+                            onSave(0)
+                            dismiss()
+                        } label: {
+                            Label("Clear today’s entry", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Set Today’s Count")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        onSave(qty)
+                        dismiss()
+                    }
+                    .disabled(qty < 0)
+                }
+            }
+        }
+    }
+}
+
+
 
 
 
