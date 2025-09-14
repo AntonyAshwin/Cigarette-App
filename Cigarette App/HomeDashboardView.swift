@@ -81,6 +81,11 @@ struct HomeDashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack() { // Restore default spacing between header, cards, and stats
+                    
+                    StreakPill(days: streakDays)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+
                     // REPLACE your TabView block with this:
                     if commonTypes.isEmpty {
                         EmptyState(onAdd: { showNewType = true })
@@ -174,6 +179,28 @@ struct HomeDashboardView: View {
             #endif
         }
     }
+    
+    // Consecutive full smoke-free days ending yesterday
+    private var streakDays: Int { smokeFreeStreak(events: events) }
+
+    private func smokeFreeStreak(events: [SmokeEvent]) -> Int {
+        let cal = Calendar.current
+        let today0 = cal.startOfDay(for: Date())
+        // All days that have at least one event
+        let eventDays = Set(events.map { cal.startOfDay(for: $0.timestamp) })
+
+        var streak = 0
+        // Start from yesterday so we only count completed smoke-free days
+        var day = cal.date(byAdding: .day, value: -1, to: today0)!
+
+        while !eventDays.contains(day) {
+            streak += 1
+            guard let prev = cal.date(byAdding: .day, value: -1, to: day) else { break }
+            day = prev
+        }
+        return streak
+    }
+
     
     private func qtyToday(for type: CigType) -> Int {
         todayCountByType[type.id] ?? 0
@@ -394,6 +421,37 @@ private struct LungsAndScoreRow: View {
         )
     }
 }
+
+private struct StreakPill: View {
+    let days: Int
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "flame.fill")
+                .font(.title3)
+                .foregroundStyle(days > 0 ? .orange : .secondary)
+
+            HStack(spacing: 4) {
+                Text("\(days)")
+                    .font(.title3.weight(.semibold))
+                    .monospacedDigit()
+                Text(days == 1 ? "day" : "days")
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke((days > 0 ? Color.orange : Color.secondary).opacity(0.25), lineWidth: 1)
+        )
+        .accessibilityLabel("Smoke-free streak: \(days) \(days == 1 ? "day" : "days")")
+    }
+}
+
 
 
 
