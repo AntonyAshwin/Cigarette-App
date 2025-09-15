@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Charts      // ← ADD THIS
 
 struct HomeDashboardView: View {
     @Environment(\.modelContext) private var context
@@ -80,85 +81,83 @@ struct HomeDashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack() { // Restore default spacing between header, cards, and stats
-                    
-                    StreakPill(days: streakDays)
-                        .padding(.horizontal)
-                        .padding(.top, 8)
-
-                    // REPLACE your TabView block with this:
-                    if commonTypes.isEmpty {
-                        EmptyState(onAdd: { showNewType = true })
-                    } else {
-                        TabView {
-                            ForEach(Array(pages.enumerated()), id: \.offset) { _, page in
-                                CardGridPage(
-                                    page: page,
-                                    counts: todayCountByType,
-                                    onAdd: { add(type: $0) },
-                                    onMinus: { removeOne(type: $0) },
-                                    onTap: { editingType = $0 }      // 👈 open editor on tap
-                                )
-
-                                .padding(.horizontal)
-                                .padding(.vertical, 8)
-                            }
-                        }
-                        .tabViewStyle(.page)
-                        .indexViewStyle(.page(backgroundDisplayMode: .always))
-                        .frame(minHeight: CGFloat((pages.first?.count ?? 1) * 110))
-                    }
-
-                    LungsAndScoreRow(
-                        tint: lungTint,               // or lungLevel.color
+                VStack(spacing: 16) {
+                    streakSection
+                    cardsPagerSection
+                    LungsSection(
+                        events: events,
+                        tint: lungTint,
                         score: lungScore100,
                         maxScore: 100,
                         label: lungLabel
                     )
                     .padding(.horizontal)
-                    .padding(.top, 6)
 
-
-                StatsPanel(
-                    todayQty: todayQty,
-                    todayCost: todayCost,
-                    allQty: allQty,
-                    allCost: allCost
-                )
-                .padding(.horizontal)
-                // Remove .padding(.bottom, 16)
+                    StatsPanel(
+                        todayQty: todayQty,
+                        todayCost: todayCost,
+                        allQty: allQty,
+                        allCost: allCost
+                    )
+                    .padding(.horizontal)
+                }
+                .padding(.top, 8)
             }
-            // Remove .padding(.bottom, 8)
-        }
-        .navigationTitle("Home")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                    Button { showHistory = true } label: {
-                        Image(systemName: "clock")   // open history
-                    }
-                    Button { showNewType = true } label: {
-                        Label("Add", systemImage: "plus")   // add cig type
+            .navigationTitle("Home")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack {
+                        Button { showHistory = true } label: { Image(systemName: "clock") }
+                        Button { showNewType = true } label: { Image(systemName: "plus") }
                     }
                 }
             }
+            .sheet(isPresented: $showHistory) {
+                NavigationStack { HistoryView() }
+            }
+            .sheet(isPresented: $showNewType) { NewTypeSheet() }
+            .sheet(item: $editingType) { type in
+                QuickQtySheet(
+                    typeName: type.name,
+                    initialQty: qtyToday(for: type),
+                    onSave: { newQty in applyQty(for: type, newQty: newQty) }
+                )
+            }
         }
-        .sheet(isPresented: $showHistory) {
-            NavigationStack { HistoryView() }     // <-- shows daily history (make sure you added HistoryView.swift)
-        }
-        .sheet(isPresented: $showNewType) { NewTypeSheet() }  // ensure this struct exists only once in the project
-        .sheet(item: $editingType) { type in
-    QuickQtySheet(
-        typeName: type.name,
-        initialQty: qtyToday(for: type),
-        onSave: { newQty in
-            applyQty(for: type, newQty: newQty)
-        }
-    )
-}
-
     }
-}
+
+    // MARK: - Extracted Sections
+
+    @ViewBuilder
+    private var streakSection: some View {
+        StreakPill(days: streakDays)
+            .padding(.horizontal)
+    }
+
+    @ViewBuilder
+    private var cardsPagerSection: some View {
+        if commonTypes.isEmpty {
+            EmptyState(onAdd: { showNewType = true })
+                .padding(.horizontal)
+        } else {
+            CardsPager(
+                pages: pages,
+                counts: todayCountByType,
+                onAdd: { add(type: $0) },
+                onMinus: { removeOne(type: $0) },
+                onTap: { editingType = $0 }
+            )
+            .frame(height: pagerHeight)
+            .padding(.horizontal)
+        }
+    }
+
+    private var pagerHeight: CGFloat {
+        // Simplified dynamic height
+        let first = pages.first?.count ?? 1
+        let rows = Int(ceil(Double(first) / 2.0))
+        return CGFloat(rows * 150)
+    }
 
     // MARK: - Actions
 
@@ -523,6 +522,149 @@ private struct QuickQtySheet: View {
                 }
             }
         }
+    }
+}
+
+// ADD NEW SECTION + CHART TYPES (place near bottom, before QuickQtySheet or after StreakPill)
+private struct LungsSection: View {
+    let events: [SmokeEvent]
+    let tint: Color
+    let score: Int
+    let maxScore: Int
+    let label: String
+
+    @State private var lookbackDays: Int = 30   // could expose UI later
+
+    var body: some View {
+        TabView {
+            LungsAndScoreRow(tint: tint, score: score, maxScore: maxScore, label: label)
+                .padding(.vertical, 2)
+
+            LungsProgressChart(events: events, tint: tint, lookbackDays: lookbackDays)
+                .padding(.vertical, 8)
+        }
+        .tabViewStyle(.page)
+        .indexViewStyle(.page(backgroundDisplayMode: .always))
+        .frame(height: 200)   // height for both pages
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Lung status and progress")
+    }
+}
+
+private struct LungsProgressChart: View {
+    let events: [SmokeEvent]
+    let tint: Color
+    let lookbackDays: Int
+
+    private struct Point: Identifiable {
+        let day: Date
+        let score: Int
+        var id: Date { day }
+    }
+
+    // Explicit type + simple builder
+    private var points: [Point] {
+        let cal = Calendar.current
+        let today0 = cal.startOfDay(for: Date())
+        return (0..<lookbackDays).compactMap { i in
+            guard let day = cal.date(byAdding: .day,
+                                     value: -(lookbackDays - 1 - i),
+                                     to: today0) else { return nil }
+            let s = 101 - LungColorEngine.score100(for: events, today: day)
+            return Point(day: day, score: s)
+        }
+    }
+
+    private var yTicks: [Int] { [0, 25, 50, 75, 100] }
+
+    // Extract the chart to reduce complexity in body
+    @ViewBuilder
+    private var progressChart: some View {
+        Chart {
+            ForEach(points) { p in
+                AreaMark(
+                    x: .value("Day", p.day),
+                    y: .value("Score", p.score)
+                )
+                .interpolationMethod(.monotone)
+                .foregroundStyle(tint.opacity(0.25).gradient)
+
+                LineMark(
+                    x: .value("Day", p.day),
+                    y: .value("Score", p.score)
+                )
+                .interpolationMethod(.monotone)
+                .foregroundStyle(tint)
+
+                PointMark(
+                    x: .value("Day", p.day),
+                    y: .value("Score", p.score)
+                )
+                .foregroundStyle(tint)
+                .symbolSize(16)
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: yTicks) { _ in
+                AxisGridLine()
+                AxisValueLabel()
+            }
+        }
+        .chartXScale(domain: (points.first?.day ?? Date())...(points.last?.day ?? Date()))
+        .chartYScale(domain: 0...100)
+        .frame(height: 140)
+        .accessibilityHidden(true)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Progress (\(lookbackDays) days)")
+                .font(.headline)
+
+            if points.isEmpty {
+                Text("No data yet.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                progressChart
+            }
+
+            Text("Higher score indicates better lung status.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(tint.opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Lightweight wrapper to reduce generic complexity
+private struct CardsPager: View {
+    let pages: [[CigType]]
+    let counts: [PersistentIdentifier: Int]
+    let onAdd: (CigType) -> Void
+    let onMinus: (CigType) -> Void
+    let onTap: (CigType) -> Void
+
+    var body: some View {
+        TabView {
+            ForEach(Array(pages.enumerated()), id: \.offset) { _, page in
+                CardGridPage(
+                    page: page,
+                    counts: counts,
+                    onAdd: onAdd,
+                    onMinus: onMinus,
+                    onTap: onTap
+                )
+                .padding(.vertical, 8)
+            }
+        }
+        .tabViewStyle(.page)
+        .indexViewStyle(.page(backgroundDisplayMode: .always))
     }
 }
 
